@@ -7,435 +7,313 @@
   <link rel="icon" type="image/x-icon" href="./favicon.ico">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/min/moment.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/locale/ro.js"></script>
-  <style>
-    :root { 
-      --primary-color: #1A3C34;
-      --secondary-color: #4A7043;
-      --accent-color: #F5F5DC;
-      --complementary-color: #4B2E2E;
-      --text-color: #FFFFFF;
-      --background-dark: #1A3C34;
-      --background-light: #1A3C34;
-      --card-bg: rgba(245, 245, 220, 0.1);
-      --card-border: rgba(245, 245, 220, 0.2);
-    }
-    a, a:link, a:visited, a:hover, a:active { color: var(--text-color) !important; text-decoration: none; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; min-height: 100%; font-family: 'Inter', sans-serif; color: var(--text-color); overflow-x: hidden; scroll-behavior: smooth; }
-    body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('./background.jpg') no-repeat center center/cover; z-index: -2; opacity: 0.4; filter: blur(2px); }
-    .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, rgba(0,0,0,0.65), rgba(0,0,0,0.45)); z-index: -1; }
+ <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const BASE_URL = '/api'; // Folosește ruta relativă pentru backend-ul pe Vercel
 
-    .dock { display: flex; position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--card-bg); backdrop-filter: blur(14px); border-radius: 25px; padding: 0.5rem; box-shadow: 0 4px 20px rgba(26, 60, 52, 0.4); z-index: 1000; align-items: center; justify-content: center; gap: 0.3rem; flex-wrap: wrap; max-width: 100%; }
-    .dock a { color: var(--text-color); font-size: 0.8rem; font-weight: 500; padding: 0.4rem 0.7rem; margin: 0.1rem; border-radius: 10px; background: var(--card-bg); transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; white-space: nowrap; position: relative; overflow: hidden; }
-    .dock a:hover { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); transform: scale(1.05); box-shadow: 0 4px 12px rgba(26, 60, 52, 0.3); }
-    .dock a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--complementary-color), transparent); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(10px); }
-    .dock a:hover::after { opacity: 1; transform: translateY(0); }
-
-    .content { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 0; gap: 3rem; text-align: center; margin: 0; }
-    h1 { font-size: 3.2rem; font-weight: 700; letter-spacing: 0.5px; animation: fadeIn 1.5s ease-out; text-shadow: 0 3px 8px rgba(26, 60, 52, 0.5), 0 0 10px rgba(75, 46, 46, 0.3); background: linear-gradient(45deg, var(--primary-color), var(--complementary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; position: relative; }
-    h2, p {
-        color: #FFFFFF;
-        text-shadow: 0 2px 5px rgba(26, 60, 52, 0.5), 0 0 8px rgba(255, 255, 255, 0.2);
-        transition: text-shadow 0.3s ease;
-    }
-    h2:hover, p:hover { text-shadow: 0 2px 8px rgba(26, 60, 52, 0.7), 0 0 12px rgba(75, 46, 46, 0.4); }
-    .btn { margin-top: 2rem; padding: 1rem 3.5rem; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color), var(--complementary-color)); color: #FFFFFF; border: none; border-radius: 50px; font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; animation: fadeIn 2.5s ease-out; position: relative; text-decoration: none; box-shadow: 0 4px 15px rgba(26, 60, 52, 0.3); }
-    .btn:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(26, 60, 52, 0.5); background: linear-gradient(45deg, var(--complementary-color), var(--secondary-color), var(--primary-color)); }
-    .btn::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 100%; height: 100%; background: radial-gradient(circle, rgba(75, 46, 46, 0.3), transparent); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
-    .btn:hover::after { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-
-    .types, .services, .about, .locations-reviews, .contact { width: 100%; margin: 0; padding: 2rem 0; text-align: center; }
-    .types h2, .services h2, .about h2, .locations-reviews h2, .contact h2 { 
-      font-size: 2rem; 
-      font-weight: 600; 
-      margin-bottom: 1.5rem; 
-      background: linear-gradient(45deg, var(--primary-color), var(--complementary-color)); 
-      -webkit-background-clip: text; 
-      -webkit-text-fill-color: transparent; 
-      text-shadow: 0 2px 5px rgba(26, 60, 52, 0.3), 0 0 8px rgba(75, 46, 46, 0.3); 
-      text-align: center; 
-      margin-left: auto; 
-      margin-right: auto; 
-      position: relative; 
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
     }
 
-    .carousel-container { width: 100%; overflow: hidden; position: relative; }
-    .service-track, .type-track, .review-track { display: flex; flex-wrap: nowrap; transition: transform 0.5s linear; }
-    .service-track:hover, .type-track:hover, .review-track:hover { animation-play-state: paused; }
-    .service-card, .type-card, .review-card { flex: 0 0 auto; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 1.5rem; margin: 0 0.5rem; backdrop-filter: blur(12px); transition: all 0.4s ease; position: relative; overflow: hidden; cursor: pointer; }
-    .service-card:hover, .type-card:hover, .review-card:hover { transform: translateY(-10px) scale(1.03); box-shadow: 0 10px 30px rgba(26, 60, 52, 0.4); background: linear-gradient(135deg, rgba(74, 112, 67, 0.2), rgba(245, 245, 220, 0.1)); }
-    .service-card::before, .type-card::before, .review-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(245, 245, 220, 0.3), transparent); transition: left 0.5s ease; }
-    .service-card:hover::before, .type-card:hover::before, .review-card:hover::before { left: 100%; }
-    .service-card { font-size: 1.1rem; font-weight: 500; min-width: 180px; text-align: center; position: relative; }
-    .service-card::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--complementary-color), transparent); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
-    .service-card:hover::after { opacity: 1; transform: translateX(-50%) scale(1); }
-    .type-card { width: 18%; height: 280px; background-size: cover; background-position: center; display: flex; align-items: flex-end; justify-content: center; border-radius: 20px; box-shadow: 0 4px 15px rgba(26, 60, 52, 0.3); }
-    .type-card span {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding: 0.5rem;
-        font-size: 0.9rem;
-        width: 100%;
-        background: linear-gradient(rgba(26, 60, 52, 0.9), rgba(26, 60, 52, 0.7));
-        text-align: center;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-        transition: text-shadow 0.3s ease;
-    }
-    .type-card:hover span { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 8px rgba(75, 46, 46, 0.3); }
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
 
-    .calendar-container {
-      display: none;
-      width: 100%;
-      max-width: 600px;
-      margin: 1rem auto;
-      padding: 0.5rem;
-      text-align: center;
-      z-index: 1000;
-      position: relative;
-    }
-    #calendar {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 0.5rem;
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      box-shadow: 0 4px 15px rgba(26, 60, 52, 0.3);
-      width: 100%;
-      touch-action: manipulation;
-    }
-    .fc .fc-daygrid-day-number, .fc .fc-daygrid-day-top {
-        color: #FFFFFF !important;
-        font-weight: 600;
-        text-shadow: 0 1px 3px rgba(26, 60, 52, 0.5);
-        transition: text-shadow 0.3s ease;
-    }
-    .fc .fc-daygrid-day-number:hover, .fc .fc-daygrid-day-top:hover {
-        text-shadow: 0 2px 6px rgba(26, 60, 52, 0.7), 0 0 8px rgba(75, 46, 46, 0.3);
-    }
-    .fc .fc-col-header-cell-cushion {
-        color: #1a3c34 !important;
-        font-weight: 500;
-        text-shadow: 0 1px 3px rgba(26, 60, 52, 0.5);
-        transition: text-shadow 0.3s ease;
-    }
-    .fc .fc-col-header-cell-cushion:hover {
-        text-shadow: 0 2px 6px rgba(26, 60, 52, 0.7), 0 0 8px rgba(75, 46, 46, 0.3);
-    }
-    .fc .fc-daygrid-day {
-        text-align: center;
-        cursor: pointer;
-    }
-    .fc .fc-daygrid-day:hover {
-        background: rgba(74, 112, 67, 0.3);
-        color: #FFFFFF !important;
-    }
-    .fc .fc-daygrid-day.fc-day-today {
-        background: rgba(74, 112, 67, 0.5);
-        color: #FFFFFF !important;
-    }
-    .fc .fc-button {
-        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-        border: none;
-        border-radius: 5px;
-        color: var(--text-color);
-        font-weight: 600;
-        padding: 0.3rem 0.6rem;
-        transition: all 0.3s ease;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    }
-    .fc .fc-button:hover {
-        background: linear-gradient(45deg, var(--secondary-color), var(--complementary-color));
-        transform: translateY(-2px);
-        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-    }
-    .fc .fc-toolbar {
-        text-align: center;
-        margin-bottom: 0.5rem;
-    }
-    .fc .fc-toolbar-title {
-        text-align: center;
-        margin-left: 0;
-        text-shadow: 0 1px 3px rgba(26, 60, 52, 0.5);
-        transition: text-shadow 0.3s ease;
-    }
-    .fc .fc-toolbar-title:hover {
-        text-shadow: 0 2px 6px rgba(26, 60, 52, 0.7), 0 0 8px rgba(75, 46, 46, 0.3);
-    }
+    let calendar = new FullCalendar.Calendar(document.getElementById('calendar-container'), {
+      initialView: 'dayGridMonth',
+      locale: 'ro',
+      initialDate: new Date(),
+      validRange: { start: new Date() },
+      headerToolbar: { left: 'prev,next today', center: '', right: 'title' },
+      height: 'auto',
+      contentHeight: 400,
+      dayMaxEvents: true,
+      selectable: true,
+      selectAllow: function(selectInfo) {
+        return selectInfo.start >= new Date();
+      },
+      events: [],
+      dateClick: function(info) {
+        handleDateSelection(info.dateStr);
+      },
+      eventClick: function(info) {
+        handleDateSelection(info.event.startStr);
+      },
+      datesSet: async function(info) {
+        const start = info.startStr;
+        const end = info.endStr;
+        console.log('Fetching range:', start, end);
+        try {
+          const response = await fetch(`${BASE_URL}/check/range?start=${start}&end=${end}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Răspunsul serverului nu este JSON valid');
+          }
+          const data = await response.json();
+          console.log('Received data from server:', data);
+          calendar.getEvents().forEach(event => event.remove());
 
-    .booking-form { max-width: 600px; margin: 0 auto; padding: 2rem 0; background: var(--card-bg); border-radius: 15px; border: 1px solid var(--card-border); backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(26, 60, 52, 0.3); text-align: center; }
-    .booking-form .form-group { position: relative; margin-bottom: 0.6rem; }
-    .booking-form .form-group input, .booking-form .form-group select, .booking-form .form-group textarea { width: 100%; padding: 1rem; border: 1px solid var(--card-border); border-radius: 10px; background: rgba(245,245,220,0.08); color: var(--text-color); font-size: 1rem; transition: all 0.3s ease; text-align: center; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-    .booking-form .form-group select { font-size: 1.1rem; background: rgba(245,245,220,0.1); cursor: pointer; }
-    .booking-form .form-group select option { background: var(--background-dark); color: var(--text-color); padding: 0.5rem; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-    .booking-form .form-group input:focus, .booking-form .form-group select:focus, .booking-form .form-group textarea:focus { outline: none; border-color: var(--primary-color); background: rgba(245,245,220,0.1); box-shadow: 0 0 10px rgba(74, 112, 67, 0.3); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
-    .booking-form .form-group input::placeholder, .booking-form .form-group textarea::placeholder { color: rgba(245,245,220,0.7); text-shadow: none; }
-    .booking-form button { width: 100%; padding: 1rem; margin: 0.6rem 0; background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); border: none; border-radius: 10px; color: var(--text-color); font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-    .booking-form button:hover { background: linear-gradient(45deg, var(--secondary-color), var(--complementary-color)); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(26, 60, 52, 0.4); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
+          const days = document.querySelectorAll('.fc-daygrid-day');
+          days.forEach(day => {
+            const date = day.getAttribute('data-date');
+            const item = data.find(d => d.date === date);
+            const countSpan = day.querySelector('.reservation-count');
+            if (countSpan) countSpan.remove();
 
-    .review-card { width: 320px; text-align: left; }
-    .review-card p { font-size: 1.1rem; font-style: italic; line-height: 1.6; text-align: center; margin-left: auto; margin-right: auto; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); transition: text-shadow 0.3s ease; }
-    .review-card p:hover { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 8px rgba(75, 46, 46, 0.3); }
-    .review-card .author { font-size: 1rem; font-weight: 600; margin-top: 1rem; text-align: right; color: var(--secondary-color); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); transition: text-shadow 0.3s ease; }
-    .review-card .author:hover { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 8px rgba(75, 46, 46, 0.3); }
+            if (item) {
+              const countSpan = document.createElement('span');
+              countSpan.className = 'reservation-count';
+              countSpan.textContent = `(${item.count})`;
+              day.querySelector('.fc-daygrid-day-number').appendChild(countSpan);
 
-    .photo-gallery {
-      width: 100%;
-      margin: 0;
-      column-count: 3;
-      column-gap: 0;
-      padding: 0;
-      line-height: 0;
-    }
-    .photo-gallery img {
-      width: 100%;
-      height: auto;
-      display: block;
-      break-inside: avoid;
-      border-radius: 2px;
-      transition: transform 0.3s ease;
-    }
-    .photo-gallery img:hover {
-      transform: scale(1.02);
-      box-shadow: 0 4px 15px rgba(26, 60, 52, 0.3);
-    }
-    @media (max-width: 768px) {
-      .photo-gallery {
-        column-count: 2;
+              day.classList.remove('fc-day-full', 'fc-day-partial', 'fc-day-free');
+              if (item.count >= 4) {
+                day.classList.add('fc-day-full');
+                calendar.addEvent({
+                  title: 'Complet',
+                  start: item.date,
+                  allDay: true,
+                  backgroundColor: '#4A7043',
+                  borderColor: '#4A7043',
+                  display: 'background'
+                });
+              } else if (item.count > 0) {
+                day.classList.add('fc-day-partial');
+                calendar.addEvent({
+                  title: `${item.count} rezervări`,
+                  start: item.date,
+                  allDay: true,
+                  backgroundColor: '#F5F5DC',
+                  borderColor: '#F5F5DC',
+                  display: 'background'
+                });
+              } else {
+                day.classList.add('fc-day-free');
+                calendar.addEvent({
+                  title: 'Liber',
+                  start: item.date,
+                  allDay: true,
+                  backgroundColor: '#90ee90',
+                  borderColor: '#90ee90',
+                  display: 'background'
+                });
+              }
+            }
+          });
+          calendar.render();
+        } catch (error) {
+          console.error('Error fetching calendar data:', error.message);
+          if (error.message.includes('Failed to fetch')) {
+            showNotification('Eroare la conectarea la server. Calendarul funcționează offline.', 'error');
+          } else if (error.message.includes('JSON')) {
+            showNotification('Eroare la procesarea datelor calendarului. Verifică formatul JSON.', 'error');
+          }
+          calendar.getEvents().forEach(event => event.remove());
+          calendar.render();
+        }
       }
-    }
-    @media (max-width: 480px) {
-      .photo-gallery {
-        column-count: 1;
+    });
+
+    async function handleDateSelection(date) {
+      console.log('Selected date:', date);
+      try {
+        const formattedDate = moment(date).format('D MMMM YYYY');
+        const dateForServer = moment(date).format('YYYY-MM-DD');
+        const response = await fetch(`${BASE_URL}/check/${dateForServer}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Răspunsul serverului nu este JSON valid');
+        }
+        const data = await response.json();
+        console.log('Check result for date:', data);
+
+        if (data.count >= 4) {
+          showNotification(`Ziua ${formattedDate} este complet rezervată! Alege altă dată.`, 'error');
+          return;
+        }
+
+        document.getElementById('booking-date').value = formattedDate;
+        calendar.getEvents().forEach(event => event.remove());
+        calendar.addEvent({
+          title: 'Rezervare selectată',
+          start: date,
+          allDay: true,
+          color: '#4A7043',
+          display: 'background'
+        });
+        calendar.render();
+        document.getElementById('calendar-container').style.display = 'none';
+      } catch (error) {
+        console.error('Error checking date:', error.message);
+        if (error.message.includes('Failed to fetch')) {
+          showNotification('Eroare la conectarea la server. Verifică conexiunea.', 'error');
+        } else if (error.message.includes('JSON')) {
+          showNotification('Eroare la procesarea datelor. Verifică formatul JSON.', 'error');
+        } else {
+          showNotification('Eroare la verificarea datei. Încearcă din nou.', 'error');
+        }
       }
     }
 
-    .notification {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%) scale(0);
-      background: var(--card-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 1rem 2rem;
-      color: var(--text-color);
-      font-size: 1.1rem;
-      font-weight: 500;
-      z-index: 10000;
-      box-shadow: 0 4px 15px rgba(26, 60, 52, 0.4);
-      animation: notificationPop 3s ease-in-out forwards;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    calendar.render();
+
+    const bookingDateInput = document.getElementById('booking-date');
+    const calendarContainer = document.getElementById('calendar-container');
+
+    bookingDateInput.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      calendarContainer.style.display = 'block';
+      calendar.gotoDate(new Date());
+      calendar.render();
+    });
+
+    bookingDateInput.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      calendarContainer.style.display = 'block';
+      calendar.gotoDate(new Date());
+      calendar.render();
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!bookingDateInput.contains(e.target) && !calendarContainer.contains(e.target)) {
+        calendarContainer.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('touchstart', function(e) {
+      if (!bookingDateInput.contains(e.target) && !calendarContainer.contains(e.target)) {
+        calendarContainer.style.display = 'none';
+      }
+    });
+
+    const form = document.querySelector('.booking-form');
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const phone = form.querySelector('#phone').value.trim();
+      const displayDate = form.querySelector('#booking-date').value || 'Nu a fost selectată';
+      const dateForServer = displayDate !== 'Nu a fost selectată' ? moment(displayDate, 'D MMMM YYYY').format('YYYY-MM-DD') : '';
+      const name = form.querySelector('#name').value.trim() || 'Fără nume';
+      const email = form.querySelector('#email').value.trim();
+      const eventType = form.querySelector('#event_type').value || 'Fără tip';
+      const details = form.querySelector('#details').value.trim() || 'Fără detalii';
+
+      if (!phone || !displayDate || displayDate === 'Nu a fost selectată') {
+        showNotification('Te rugăm să completezi numărul de telefon și să selectezi o dată.', 'error');
+        return;
+      }
+
+      if (!/\+[0-9]{2}[0-9]{9}/.test(phone)) {
+        showNotification('Numărul de telefon trebuie să fie în formatul +40712 345 678.', 'error');
+        return;
+      }
+
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showNotification('Te rugăm să introduci un e-mail valid sau să lași câmpul gol.', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${BASE_URL}/check/${dateForServer}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Răspunsul serverului nu este JSON valid');
+        }
+        const data = await response.json();
+        if (data.count >= 4) {
+          showNotification(`Ziua ${displayDate} este complet rezervată! Te rugăm să alegi altă dată.`, 'error');
+          return;
+        }
+
+        const reserveResponse = await fetch(`${BASE_URL}/reserve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateForServer, name, email, phone, eventType, details })
+        });
+        if (!reserveResponse.ok) {
+          throw new Error(`HTTP error! status: ${reserveResponse.status}`);
+        }
+
+        showNotification('Cererea ta a fost trimisă! Îți vom contacta în curând pentru confirmare.', 'success');
+        form.reset();
+        calendar.getEvents().forEach(event => event.remove());
+        calendarContainer.style.display = 'block';
+        calendar.render();
+      } catch (error) {
+        console.error('Error submitting reservation:', error.message);
+        if (error.message.includes('Failed to fetch')) {
+          showNotification('Eroare la conectarea la server. Verifică conexiunea.', 'error');
+        } else if (error.message.includes('JSON')) {
+          showNotification('Eroare la procesarea datelor. Verifică formatul JSON.', 'error');
+        } else {
+          showNotification('Eroare la trimiterea cererii. Încearcă din nou.', 'error');
+        }
+      }
+    });
+
+    const backToTop = document.getElementById('back-to-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) backToTop.style.display = 'block';
+      else backToTop.style.display = 'none';
+    });
+    backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    function initializeInfiniteCarousel(trackSelector, cardSelector, speed) {
+      const track = document.querySelector(trackSelector);
+      const container = track.parentElement;
+      const cards = Array.from(document.querySelectorAll(cardSelector));
+      for (let i = 0; i < 3; i++) cards.forEach(card => track.appendChild(card.cloneNode(true)));
+      const updatedCards = track.querySelectorAll(cardSelector);
+      let scrollPosition = 0, isPaused = false, lastResetTime = performance.now();
+      const cardWidth = updatedCards[0].offsetWidth + parseFloat(getComputedStyle(updatedCards[0]).marginRight);
+      const totalWidth = cardWidth * cards.length;
+
+      function scrollCarousel(currentTime) {
+        if (!isPaused) {
+          scrollPosition += speed;
+          if (currentTime - lastResetTime >= 300000 || scrollPosition >= totalWidth * 3) {
+            scrollPosition = 0;
+            lastResetTime = currentTime;
+            track.style.transition = 'none';
+            track.style.transform = `translateX(-${scrollPosition}px)`;
+            void track.offsetWidth;
+            track.style.transition = 'transform 0.5s linear';
+          } else {
+            track.style.transform = `translateX(-${scrollPosition}px)`;
+          }
+        }
+        requestAnimationFrame(scrollCarousel);
+      }
+
+      requestAnimationFrame(scrollCarousel);
+      container.addEventListener('mouseenter', () => isPaused = true);
+      container.addEventListener('mouseleave', () => isPaused = false);
     }
-    .notification:hover { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 8px rgba(75, 46, 46, 0.3); }
-    .notification.success {
-      background: linear-gradient(45deg, rgba(144,238,144,0.3), rgba(245,245,220,0.1));
-      border-color: #90ee90;
-    }
-    .notification.error {
-      background: linear-gradient(45deg, rgba(74,112,67,0.3), rgba(245,245,220,0.1));
-      border-color: #4A7043;
-    }
-    @keyframes notificationPop {
-      0% { transform: translateX(-50%) scale(0); opacity: 0; }
-      10% { transform: translateX(-50%) scale(1.1); opacity: 1; }
-      90% { transform: translateX(-50%) scale(1); opacity: 1; }
-      100% { transform: translateX(-50%) scale(0); opacity: 0; }
-    }
-    @keyframes pulseGlow {
-      0% { opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { opacity: 0.6; }
-    }
 
-    @media (max-width: 768px) {
-      .dock { flex-direction: row; width: 100%; max-width: 400px; bottom: 1rem; left: 50%; transform: translateX(-50%); padding: 0.3rem; border-radius: 15px; gap: 0.2rem; }
-      .dock a { font-size: 0.7rem; padding: 0.3rem 0.5rem; margin: 0; width: auto; text-align: center; }
-      h1 { font-size: 2rem; }
-      p { font-size: 1rem; }
-      .btn { padding: 0.7rem 2rem; font-size: 1rem; }
-      .service-card { min-width: 140px; font-size: 0.9rem; }
-      .type-card { width: 20%; height: 200px; }
-      .type-card span { font-size: 0.7rem; padding: 0.3rem; }
-      .types, .services, .about, .locations-reviews, .contact { padding: 1rem 0; }
-      .booking-form { padding: 1rem 0; }
-      .booking-form .form-group input, .booking-form .form-group select, .booking-form .form-group textarea { font-size: 0.9rem; padding: 0.8rem; }
-      .booking-form button { font-size: 1rem; padding: 0.8rem; }
-      .review-card { width: 250px; }
-      .notification { font-size: 0.9rem; padding: 0.8rem 1.5rem; }
-      .calendar-container { padding: 0.5rem 0; max-width: 100%; }
-      #calendar { max-height: 300px; }
-    }
-
-    @media (min-width: 769px) { .dock { display: none; } }
-
-    .required-field { position: relative; }
-    .required-field .mandatory-indicator { position: absolute; right: -1.5rem; top: 50%; transform: translateY(-50%); color: var(--secondary-color); font-size: 1.2em; font-weight: bold; transition: transform 0.3s ease, color 0.3s ease; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-    .required-field:hover .mandatory-indicator { transform: translateY(-50%) scale(1.2); color: var(--complementary-color); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
-
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-    .fc .fc-daygrid-day.fc-day-full {
-      background-color: #4A7043 !important;
-      color: #FFFFFF !important;
-      transition: background-color 0.3s ease;
-    }
-
-    .fc .fc-daygrid-day.fc-day-partial {
-      background-color: #F5F5DC !important;
-      color: #1A3C34 !important;
-      transition: background-color 0.3s ease;
-    }
-
-    .fc .fc-daygrid-day.fc-day-free {
-      background-color: #90ee90 !important;
-      color: #1A3C34 !important;
-      transition: background-color 0.3s ease;
-    }
-
-    .reservation-count {
-      font-size: 0.8rem;
-      font-weight: 500;
-      margin-left: 0.2rem;
-      color: var(--text-color);
-      background-color: rgba(26, 60, 52, 0.5);
-      padding: 0 4px;
-      border-radius: 3px;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-      transition: text-shadow 0.3s ease;
-    }
-    .reservation-count:hover {
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7), 0 0 8px rgba(75, 46, 46, 0.3);
-    }
-  </style>
-</head>
-<body>
-  <div class="overlay"></div>
-
-  <nav class="dock">
-    <a href="#home">Acasă</a>
-    <a href="#contact">Contact</a>
-    <a href="#locations-reviews">Recenzii</a>
-    <a href="#about">Despre noi</a>
-  </nav>
-
-  <div class="content" id="home">
-    <h1>Fără cuvinte. Doar magie.</h1>
-    <p>Transformăm evenimentele tale în momente de neuitat cu animatori profesioniști și servicii personalizate.</p>
-    <a href="tel:+40712345678" class="btn">+40 712 345 678</a>
-
-    <div class="types" id="types">
-      <h2>Tipuri de animatori</h2>
-      <div class="carousel-container">
-        <div class="type-track">
-          <a href="#mimi-clasic" class="type-card" style="background-image: url('./mime1.jpg');">
-            <span>🎭 Mimi Clasic</span>
-          </a>
-          <a href="#mimi-clown" class="type-card" style="background-image: url('./mime2.jpg');">
-            <span>🤹‍♂️ Mimi Clown</span>
-          </a>
-          <a href="#mimi-romantic" class="type-card" style="background-image: url('./mime3.jpg');">
-            <span>💌 Mimi Romantic</span>
-          </a>
-          <a href="#mimi-filosof" class="type-card" style="background-image: url('./mime4.jpg');">
-            <span>🧠 Mimi Filosof</span>
-          </a>
-          <a href="#mimi-spectacol" class="type-card" style="background-image: url('./mime5.jpg');">
-            <span>🎪 Mimi Spectacol</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="services" id="services">
-      <h2>Serviciile noastre</h2>
-      <div class="carousel-container">
-        <div class="service-track">
-          <a href="#nunta" class="service-card">🎩 Nuntă</a>
-          <a href="#copii" class="service-card">🎈 Copii</a>
-          <a href="#corporate" class="service-card">🏢 Corporate</a>
-          <a href="#petreceri" class="service-card">🎉 Petreceri private</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="contact" id="contact">
-      <h2>Contact</h2>
-      <p>Contactează-ne pentru a aduce magia la evenimentul tău!</p>
-      <form class="booking-form">
-        <div class="form-group">
-          <input type="text" id="name" name="name" placeholder="Nume" autocomplete="name">
-        </div>
-        <div class="form-group">
-          <input type="email" id="email" name="email" placeholder="Email (opțional)" autocomplete="email">
-        </div>
-        <div class="form-group required-field">
-          <input type="tel" id="phone" name="phone" placeholder="Număr de telefon (ex. +40712 345 678)" autocomplete="tel" required pattern="\+[0-9]{2}[0-9]{9}">
-          <span class="mandatory-indicator">*</span>
-        </div>
-        <div class="form-group">
-          <select id="event_type" name="event_type" aria-label="Tipul evenimentului">
-            <option value="" disabled selected>Tipul evenimentului</option>
-            <option value="nunta">Nuntă</option>
-            <option value="copii">Copii</option>
-            <option value="corporate">Corporate</option>
-            <option value="petreceri">Petreceri private</option>
-          </select>
-        </div>
-        <div class="form-group required-field">
-          <input type="text" id="booking-date" name="date" placeholder="Selectează data" readonly required style="cursor: pointer;">
-          <span class="mandatory-indicator">*</span>
-        </div>
-        <div id="calendar-container" class="calendar-container"></div>
-        <div class="form-group">
-          <textarea id="details" name="details" placeholder="Detalii suplimentare" rows="5"></textarea>
-        </div>
-        <button type="submit">Trimite cererea</button>
-      </form>
-    </div>
-
-    <div class="locations-reviews" id="locations-reviews">
-      <h2>Recenzii</h2>
-      <p>Află ce spun clienții noștri despre momentele unice pe care le-am creat pentru ei.</p>
-      <div class="carousel-container">
-        <div class="review-track">
-          <div class="review-card">
-            <p>"Mimi Events a transformat nunta noastră din Brașov într-un basm! Animatorii au fost fantastici, iar oaspeții încă vorbesc despre ei."</p>
-            <div class="author">— Maria & Andrei</div>
-          </div>
-          <div class="review-card">
-            <p>"Petrecerea copiilor din Iași a fost un succes datorită Mimi Clown! Toată lumea s-a distrat, de la mic la mare."</p>
-            <div class="author">— Elena Popescu</div>
-          </div>
-          <div class="review-card">
-            <p>"Evenimentul corporate din Constanța a fost memorabil datorită profesionalismului echipei. Recomand cu încredere!"</p>
-            <div class="author">— SC Global Solutions</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="about" id="about">
-      <h2>Despre noi</h2>
-      <p>Suntem o echipă dedicată de animatori profesioniști care aduc bucurie și magie la fiecare eveniment. Cu o experiență vastă și o pasiune pentru momente memorabile, transformăm orice ocazie într-o poveste de neuitat.</p>
-    </div>
-
-    <div class="photo-gallery">
-      <img src="photo1.jpg" alt="Galerie foto">
-      <img src="photo2.jpg" alt="Galerie foto">
-      <img src="photo3.jpg" alt="Galerie foto">
-      <img src="photo4.jpg" alt="Galerie foto">
-      <img src="photo5.jpg" alt="Galerie foto">
-    </div>
-
-    <button id="back-to-top" class="btn" style="position: fixed; bottom: 2rem; right: 2rem; padding: 0.8rem 1.5rem; display: none;">⬆️</button>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
-  <script>
+    initializeInfiniteCarousel('.type-track', '.type-card', 1);
+    initializeInfiniteCarousel('.service-track', '.service-card', 1.5);
+    initializeInfiniteCarousel('.review-track', '.review-card', 0.8);
+  });
+</script>
     document.addEventListener('DOMContentLoaded', function() {
       function showNotification(message, type) {
         const notification = document.createElement('div');
