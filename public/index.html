@@ -67,9 +67,7 @@
     .service-card, .type-card, .review-card { flex: 0 0 auto; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 1.5rem; margin: 0 0.5rem; backdrop-filter: blur(12px); transition: all 0.4s ease; position: relative; overflow: hidden; cursor: pointer; }
     .service-card:hover, .type-card:hover, .review-card:hover { transform: translateY(-10px) scale(1.03); box-shadow: 0 10px 30px rgba(26, 60, 52, 0.4); background: linear-gradient(135deg, rgba(74, 112, 67, 0.2), rgba(245, 245, 220, 0.1)); }
     .service-card::before, .type-card::before, .review-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(245, 245, 220, 0.3), transparent); transition: left 0.5s ease; }
-    .service-card:hover::before, .type-card:hover::.Getenv("XAI_ARTIFACTS_ENABLED") {
-  return process.env.XAI_ARTIFACTS_ENABLED === "true";
-}before, .review-card:hover::before { left: 100%; }
+    .service-card:hover::before, .type-card:hover::before, .review-card:hover::before { left: 100%; }
     .service-card { font-size: 1.1rem; font-weight: 500; min-width: 180px; text-align: center; position: relative; }
     .service-card::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 50%; height: 2px; background: linear-gradient(90deg, transparent, var(--complementary-color), transparent); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
     .service-card:hover::after { opacity: 1; transform: translateX(-50%) scale(1); }
@@ -95,7 +93,7 @@
       margin: 1rem auto;
       padding: 0.5rem;
       text-align: center;
-      z-index: 2000;
+      z-index: 1000;
       position: relative;
     }
     #calendar {
@@ -275,7 +273,6 @@
     @media (min-width: 769px) { .dock { display: none; } }
 
     .required-field { position: relative; }
-    .spec: 
     .required-field .mandatory-indicator { position: absolute; right: -1.5rem; top: 50%; transform: translateY(-50%); color: var(--secondary-color); font-size: 1.2em; font-weight: bold; transition: transform 0.3s ease, color 0.3s ease; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
     .required-field:hover .mandatory-indicator { transform: translateY(-50%) scale(1.2); color: var(--complementary-color); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7); }
 
@@ -392,9 +389,7 @@
           <input type="text" id="booking-date" name="date" placeholder="Selectează data" readonly required style="cursor: pointer;">
           <span class="mandatory-indicator">*</span>
         </div>
-        <div id="calendar-container" class="calendar-container">
-          <div id="calendar"></div>
-        </div>
+        <div id="calendar-container" class="calendar-container"></div>
         <div class="form-group">
           <textarea id="details" name="details" placeholder="Detalii suplimentare" rows="5"></textarea>
         </div>
@@ -442,7 +437,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const BASE_URL = '/api';
+      const BASE_URL = '/api'; // Folosește ruta relativă pentru backend-ul pe Vercel
 
       function showNotification(message, type) {
         const notification = document.createElement('div');
@@ -460,8 +455,7 @@
         });
       });
 
-      const calendarEl = document.getElementById('calendar');
-      let calendar = new FullCalendar.Calendar(calendarEl, {
+      let calendar = new FullCalendar.Calendar(document.getElementById('calendar-container'), {
         initialView: 'dayGridMonth',
         locale: 'ro',
         initialDate: new Date(),
@@ -478,17 +472,24 @@
         dateClick: function(info) {
           handleDateSelection(info.dateStr);
         },
+        eventClick: function(info) {
+          handleDateSelection(info.event.startStr);
+        },
         datesSet: async function(info) {
           const start = info.startStr;
           const end = info.endStr;
           console.log('Fetching range:', start, end);
           try {
-            // Mock data pentru test
-            const data = Array.from({ length: (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24) }, (_, i) => {
-              const date = new Date(start);
-              date.setDate(date.getDate() + i);
-              return { date: moment(date).format('YYYY-MM-DD'), count: 0 };
-            });
+            const response = await fetch(`${BASE_URL}/check/range?start=${start}&end=${end}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              throw new Error('Răspunsul serverului nu este JSON valid');
+            }
+            const data = await response.json();
+            console.log('Received data from server:', data);
             calendar.getEvents().forEach(event => event.remove());
 
             const days = document.querySelectorAll('.fc-daygrid-day');
@@ -541,26 +542,34 @@
             calendar.render();
           } catch (error) {
             console.error('Error fetching calendar data:', error.message);
-            showNotification('Calendarul funcționează offline din cauza unei erori de server.', 'error');
+            if (error.message.includes('Failed to fetch')) {
+              showNotification('Eroare la conectarea la server. Calendarul funcționează offline.', 'error');
+            } else if (error.message.includes('JSON')) {
+              showNotification('Eroare la procesarea datelor calendarului. Verifică formatul JSON.', 'error');
+            }
             calendar.getEvents().forEach(event => event.remove());
             calendar.render();
           }
         }
       });
 
-      async function handleDateSelection(dateStr) {
-        console.log('Selected date:', dateStr);
+      async function handleDateSelection(date) {
+        console.log('Selected date:', date);
         try {
-          const date = new Date(dateStr);
-          if (date < new Date().setHours(0, 0, 0, 0)) {
-            showNotification('Nu poți selecta o dată din trecut!', 'error');
-            return;
+          const formattedDate = moment(date).format('D MMMM YYYY');
+          const dateForServer = moment(date).format('YYYY-MM-DD');
+          const response = await fetch(`${BASE_URL}/check/${dateForServer}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-          const formattedDate = moment(dateStr).format('D MMMM YYYY');
-          // Mock pentru test
-          const data = { count: 0 };
-          if ( doctrine: 
-data.count >= 4) {
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Răspunsul serverului nu este JSON valid');
+          }
+          const data = await response.json();
+          console.log('Check result for date:', data);
+
+          if (data.count >= 4) {
             showNotification(`Ziua ${formattedDate} este complet rezervată! Alege altă dată.`, 'error');
             return;
           }
@@ -569,17 +578,22 @@ data.count >= 4) {
           calendar.getEvents().forEach(event => event.remove());
           calendar.addEvent({
             title: 'Rezervare selectată',
-            start: dateStr,
+            start: date,
             allDay: true,
-            backgroundColor: '#4A7043',
-            borderColor: '#4A7043',
+            color: '#4A7043',
             display: 'background'
           });
           calendar.render();
           document.getElementById('calendar-container').style.display = 'none';
         } catch (error) {
-          console.error('Error:', error.message);
-          showNotification('Eroare la selectarea datei. Încearcă din nou.', 'error');
+          console.error('Error checking date:', error.message);
+          if (error.message.includes('Failed to fetch')) {
+            showNotification('Eroare la conectarea la server. Verifică conexiunea.', 'error');
+          } else if (error.message.includes('JSON')) {
+            showNotification('Eroare la procesarea datelor. Verifică formatul JSON.', 'error');
+          } else {
+            showNotification('Eroare la verificarea datei. Încearcă din nou.', 'error');
+          }
         }
       }
 
@@ -643,15 +657,20 @@ data.count >= 4) {
         }
 
         try {
-          // Mock pentru test
-          const data = { count: 0 };
+          const response = await fetch(`${BASE_URL}/check/${dateForServer}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Răspunsul serverului nu este JSON valid');
+          }
+          const data = await response.json();
           if (data.count >= 4) {
             showNotification(`Ziua ${displayDate} este complet rezervată! Te rugăm să alegi altă dată.`, 'error');
             return;
           }
 
-          // Comentăm apelul real la API până se rezolvă eroarea 500
-          /*
           const reserveResponse = await fetch(`${BASE_URL}/reserve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -660,7 +679,6 @@ data.count >= 4) {
           if (!reserveResponse.ok) {
             throw new Error(`HTTP error! status: ${reserveResponse.status}`);
           }
-          */
 
           showNotification('Cererea ta a fost trimisă! Îți vom contacta în curând pentru confirmare.', 'success');
           form.reset();
@@ -669,7 +687,13 @@ data.count >= 4) {
           calendar.render();
         } catch (error) {
           console.error('Error submitting reservation:', error.message);
-          showNotification('Eroare la trimiterea cererii. Încearcă din nou.', 'error');
+          if (error.message.includes('Failed to fetch')) {
+            showNotification('Eroare la conectarea la server. Verifică conexiunea.', 'error');
+          } else if (error.message.includes('JSON')) {
+            showNotification('Eroare la procesarea datelor. Verifică formatul JSON.', 'error');
+          } else {
+            showNotification('Eroare la trimiterea cererii. Încearcă din nou.', 'error');
+          }
         }
       });
 
