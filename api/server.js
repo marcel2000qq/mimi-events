@@ -1,24 +1,41 @@
 const express = require('express');
-const storage = require('node-persist');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Inițializăm node-persist
-async function initializeStorage() {
+// Conexiune la MongoDB
+async function connectToMongoDB() {
   try {
-    await storage.init({ dir: './storage' });
-    console.log('Storage initialized successfully');
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('Connected to MongoDB');
   } catch (error) {
-    console.error('Failed to initialize storage:', error);
-    process.exit(1); // Oprim serverul dacă inițializarea eșuează
+    console.error('Failed to connect to MongoDB:', error.message);
+    process.exit(1);
   }
 }
 
-initializeStorage();
+connectToMongoDB();
 
+// Definim schema pentru rezervări
+const reservationSchema = new mongoose.Schema({
+  date: { type: String, required: true },
+  name: { type: String, default: 'Fără nume' },
+  email: { type: String },
+  phone: { type: String, required: true },
+  eventType: { type: String, default: 'Fără tip' },
+  details: { type: String, default: 'Fără detalii' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const Reservation = mongoose.model('Reservation', reservationSchema);
+
+// Endpoint pentru verificarea disponibilității pe un interval
 app.get('/api/check/range', async (req, res) => {
   try {
     const { start, end } = req.query;
@@ -35,7 +52,7 @@ app.get('/api/check/range', async (req, res) => {
     const dates = [];
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0];
-      const count = (await storage.getItem(dateStr)) || 0;
+      const count = await Reservation.countDocuments({ date: dateStr });
       dates.push({ date: dateStr, count });
     }
 
@@ -46,6 +63,7 @@ app.get('/api/check/range', async (req, res) => {
   }
 });
 
+// Endpoint pentru verificarea unei date specifice
 app.get('/api/check/:date', async (req, res) => {
   try {
     const { date } = req.params;
@@ -53,7 +71,7 @@ app.get('/api/check/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date format' });
     }
 
-    const count = (await storage.getItem(date)) || 0;
+    const count = await Reservation.countDocuments({ date });
     res.json({ count });
   } catch (error) {
     console.error('Error in /api/check/:date:', error.message);
@@ -61,6 +79,7 @@ app.get('/api/check/:date', async (req, res) => {
   }
 });
 
+// Endpoint pentru rezervare
 app.post('/api/reserve', async (req, res) => {
   try {
     const { date, name, email, phone, eventType, details } = req.body;
@@ -74,13 +93,21 @@ app.post('/api/reserve', async (req, res) => {
       return res.status(400).json({ error: 'Invalid phone format' });
     }
 
-    const count = (await storage.getItem(date)) || 0;
+    const count = await Reservation.countDocuments({ date });
     if (count >= 4) {
       return res.status(400).json({ error: 'Date is fully booked' });
     }
 
-    await storage.setItem(date, count + 1);
-    // Aici poți adăuga logica pentru salvarea detaliilor rezervării
+    const reservation = new Reservation({
+      date,
+      name,
+      email,
+      phone,
+      eventType,
+      details,
+    });
+    await reservation.save();
+
     res.json({ message: 'Reservation successful' });
   } catch (error) {
     console.error('Error in /api/reserve:', error.message);
