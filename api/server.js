@@ -22,7 +22,7 @@ async function connectToMongoDB() {
 
 connectToMongoDB();
 
-// Definim schema pentru rezervări
+// Schema pentru rezervări
 const reservationSchema = new mongoose.Schema({
   date: { type: String, required: true },
   name: { type: String, default: 'Fără nume' },
@@ -35,7 +35,7 @@ const reservationSchema = new mongoose.Schema({
 
 const Reservation = mongoose.model('Reservation', reservationSchema);
 
-// Endpoint pentru verificarea disponibilității pe un interval
+// Verifică disponibilitatea pe un interval
 app.get('/api/check/range', async (req, res) => {
   try {
     const { start, end } = req.query;
@@ -63,7 +63,7 @@ app.get('/api/check/range', async (req, res) => {
   }
 });
 
-// Endpoint pentru verificarea unei date specifice
+// Verifică o dată specifică
 app.get('/api/check/:date', async (req, res) => {
   try {
     const { date } = req.params;
@@ -79,7 +79,7 @@ app.get('/api/check/:date', async (req, res) => {
   }
 });
 
-// Endpoint pentru rezervare
+// Salvează rezervarea
 app.post('/api/reserve', async (req, res) => {
   try {
     const { date, name, email, phone, eventType, details } = req.body;
