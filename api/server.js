@@ -6,7 +6,7 @@ const serverless = require('serverless-http');
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://mimi-events.vercel.app', // Actualizat cu noul URL
+    origin: ['https://mimi-events.vercel.app', 'http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true
 }));
@@ -20,13 +20,13 @@ async function connectToMongo() {
         console.log("Conectat la MongoDB Atlas");
     } catch (error) {
         console.error("Eroare la conectare:", error);
+        throw error;
     }
 }
 
-connectToMongo();
-
 app.get('/check/:date', async (req, res) => {
     try {
+        await client.connect();
         const date = req.params.date;
         const db = client.db('calendar_db');
         const reservations = db.collection('reservations');
@@ -39,23 +39,24 @@ app.get('/check/:date', async (req, res) => {
 });
 
 app.get('/check/range', async (req, res) => {
-    const { start, end } = req.query;
-    const db = client.db('calendar_db');
-    const reservations = db.collection('reservations');
-    const pipeline = [
-        {
-            $match: {
-                date: { $gte: start, $lte: end }
-            }
-        },
-        {
-            $group: {
-                _id: "$date",
-                count: { $sum: 1 }
-            }
-        }
-    ];
     try {
+        await client.connect();
+        const { start, end } = req.query;
+        const db = client.db('calendar_db');
+        const reservations = db.collection('reservations');
+        const pipeline = [
+            {
+                $match: {
+                    date: { $gte: start, $lte: end }
+                }
+            },
+            {
+                $group: {
+                    _id: "$date",
+                    count: { $sum: 1 }
+                }
+            }
+        ];
         const result = await reservations.aggregate(pipeline).toArray();
         console.log('Rezultat agregare:', result);
         const data = result.map(item => ({ date: item._id, count: item.count || 0 }));
@@ -84,6 +85,7 @@ function getDatesInRange(start, end) {
 
 app.post('/reserve', async (req, res) => {
     try {
+        await client.connect();
         const { date, name, email, phone, eventType, details } = req.body;
         const db = client.db('calendar_db');
         const reservations = db.collection('reservations');
