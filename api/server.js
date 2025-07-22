@@ -1,36 +1,41 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
-const serverless = require('serverless-http'); // Add this for Vercel
+const serverless = require('serverless-http');
 
 const app = express();
 app.use(express.json());
 app.use(cors({
-    origin: 'https://2-0-beryl.vercel.app', // Allow your frontend domain
+    origin: 'https://mimi-events.vercel.app', // Actualizat cu noul URL
     methods: ['GET', 'POST'],
     credentials: true
 }));
 
-const uri = "mongodb+srv://myUser:MySecurePassword123@reservations.zjc2epf.mongodb.net/calendar_db?retryWrites=true&w=majority&appName=reservations";
+const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 
 async function connectToMongo() {
     try {
         await client.connect();
-        console.log("Connected to MongoDB Atlas");
+        console.log("Conectat la MongoDB Atlas");
     } catch (error) {
-        console.error("Connection error:", error);
+        console.error("Eroare la conectare:", error);
     }
 }
 
 connectToMongo();
 
 app.get('/check/:date', async (req, res) => {
-    const date = req.params.date;
-    const db = client.db('calendar_db');
-    const reservations = db.collection('reservations');
-    const count = await reservations.countDocuments({ date: date });
-    res.json({ count });
+    try {
+        const date = req.params.date;
+        const db = client.db('calendar_db');
+        const reservations = db.collection('reservations');
+        const count = await reservations.countDocuments({ date: date });
+        res.json({ count });
+    } catch (error) {
+        console.error("Eroare la verificarea datei:", error);
+        res.status(500).json({ error: "Eroare server" });
+    }
 });
 
 app.get('/check/range', async (req, res) => {
@@ -52,7 +57,7 @@ app.get('/check/range', async (req, res) => {
     ];
     try {
         const result = await reservations.aggregate(pipeline).toArray();
-        console.log('Aggregation result:', result);
+        console.log('Rezultat agregare:', result);
         const data = result.map(item => ({ date: item._id, count: item.count || 0 }));
         const allDates = getDatesInRange(new Date(start), new Date(end));
         const fullData = allDates.map(date => {
@@ -61,7 +66,7 @@ app.get('/check/range', async (req, res) => {
         });
         res.json(fullData);
     } catch (error) {
-        console.error("Error fetching range data:", error);
+        console.error("Eroare la preluarea intervalului:", error);
         res.status(500).json({ error: "Eroare la preluarea datelor" });
     }
 });
@@ -78,17 +83,21 @@ function getDatesInRange(start, end) {
 }
 
 app.post('/reserve', async (req, res) => {
-    const { date, name, email, phone, eventType, details } = req.body;
-    const db = client.db('calendar_db');
-    const reservations = db.collection('reservations');
-    const count = await reservations.countDocuments({ date: date });
-    if (count >= 4) {
-        res.status(400).json({ message: 'Ziua este complet rezervată!' });
-    } else {
-        await reservations.insertOne({ date, name, email, phone, eventType, details, timestamp: new Date() });
-        res.json({ message: 'Rezervare făcută!' });
+    try {
+        const { date, name, email, phone, eventType, details } = req.body;
+        const db = client.db('calendar_db');
+        const reservations = db.collection('reservations');
+        const count = await reservations.countDocuments({ date: date });
+        if (count >= 4) {
+            res.status(400).json({ message: 'Ziua este complet rezervată!' });
+        } else {
+            await reservations.insertOne({ date, name, email, phone, eventType, details, timestamp: new Date() });
+            res.json({ message: 'Rezervare făcută!' });
+        }
+    } catch (error) {
+        console.error("Eroare la rezervare:", error);
+        res.status(500).json({ error: "Eroare server" });
     }
 });
 
-// Export for Vercel serverless
 module.exports = serverless(app);
