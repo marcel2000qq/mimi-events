@@ -1,10 +1,15 @@
 const express = require('express');
-const mongoose = require('mongoose');
+const { MongoClient } = require('mongodb');
 const cors = require('cors');
-const app = express();
+const serverless = require('serverless-http');
 
-app.use(cors());
+const app = express();
 app.use(express.json());
+app.use(cors({
+    origin: 'https://mimi-events.vercel.app', // Actualizat cu noul URL
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 
 async function connectToMongoDB() {
   try {
@@ -17,9 +22,11 @@ async function connectToMongoDB() {
     console.error('Failed to connect to MongoDB:', error.message);
     process.exit(1);
   }
+
 }
 
 connectToMongoDB();
+
 
 const reservationSchema = new mongoose.Schema({
   date: { type: String, required: true },
@@ -33,84 +40,78 @@ const reservationSchema = new mongoose.Schema({
 
 const Reservation = mongoose.model('Reservation', reservationSchema);
 
-app.get('/api/check/range', async (req, res) => {
-  try {
+app.get('/check/:date', async (req, res) => {
+    try {
+        const date = req.params.date;
+        const db = client.db('calendar_db');
+        const reservations = db.collection('reservations');
+        const count = await reservations.countDocuments({ date: date });
+        res.json({ count });
+    } catch (error) {
+        console.error("Eroare la verificarea datei:", error);
+        res.status(500).json({ error: "Eroare server" });
+    }
+});
+
+app.get('/check/range', async (req, res) => {
     const { start, end } = req.query;
-    if (!start || !end) {
-      return res.status(400).json({ error: 'Start and end dates are required' });
+    const db = client.db('calendar_db');
+    const reservations = db.collection('reservations');
+    const pipeline = [
+        {
+            $match: {
+                date: { $gte: start, $lte: end }
+            }
+        },
+        {
+            $group: {
+                _id: "$date",
+                count: { $sum: 1 }
+            }
+        }
+    ];
+    try {
+        const result = await reservations.aggregate(pipeline).toArray();
+        console.log('Rezultat agregare:', result);
+        const data = result.map(item => ({ date: item._id, count: item.count || 0 }));
+        const allDates = getDatesInRange(new Date(start), new Date(end));
+        const fullData = allDates.map(date => {
+            const found = data.find(item => item.date === date);
+            return found || { date, count: 0 };
+        });
+        res.json(fullData);
+    } catch (error) {
+        console.error("Eroare la preluarea intervalului:", error);
+        res.status(500).json({ error: "Eroare la preluarea datelor" });
     }
+});
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    if (isNaN(startDate) || isNaN(endDate)) {
-      return res.status(400).json({ error: 'Invalid date format' });
-    }
-
+function getDatesInRange(start, end) {
     const dates = [];
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      const count = await Reservation.countDocuments({ date: dateStr });
-      dates.push({ date: dateStr, count });
+    let currentDate = new Date(start);
+    const endDate = new Date(end);
+    while (currentDate <= endDate) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
     }
+    return dates;
+}
 
-    res.json(dates);
-  } catch (error) {
-    console.error('Error in /api/check/range:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+app.post('/reserve', async (req, res) => {
+    try {
+        const { date, name, email, phone, eventType, details } = req.body;
+        const db = client.db('calendar_db');
+        const reservations = db.collection('reservations');
+        const count = await reservations.countDocuments({ date: date });
+        if (count >= 4) {
+            res.status(400).json({ message: 'Ziua este complet rezervată!' });
+        } else {
+            await reservations.insertOne({ date, name, email, phone, eventType, details, timestamp: new Date() });
+            res.json({ message: 'Rezervare făcută!' });
+        }
+    } catch (error) {
+        console.error("Eroare la rezervare:", error);
+        res.status(500).json({ error: "Eroare server" });
+    }
 });
-
-app.get('/api/check/:date', async (req, res) => {
-  try {
-    const { date } = req.params;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(400).json({ error: 'Invalid date format' });
-    }
-
-    const count = await Reservation.countDocuments({ date });
-    res.json({ count });
-  } catch (error) {
-    console.error('Error in /api/check/:date:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.post('/api/reserve', async (req, res) => {
-  try {
-    const { date, name, email, phone, eventType, details } = req.body;
-    if (!date || !phone) {
-      return res.status(400).json({ error: 'Date and phone are required' });
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(400).json({ error: 'Invalid date format' });
-    }
-    if (!/\+[0-9]{2}[0-9]{9}/.test(phone)) {
-      return res.status(400).json({ error: 'Invalid phone format' });
-    }
-
-    const count = await Reservation.countDocuments({ date });
-    if (count >= 4) {
-      return res.status(400).json({ error: 'Date is fully booked' });
-    }
-
-    const reservation = new Reservation({
-      date,
-      name,
-      email,
-      phone,
-      eventType,
-      details,
-    });
-    await reservation.save();
-
-    res.json({ message: 'Reservation successful' });
-  } catch (error) {
-    console.error('Error in /api/reserve:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+module.exports = serverless(app);
