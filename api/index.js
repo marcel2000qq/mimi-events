@@ -6,7 +6,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Conexiune la MongoDB
 async function connectToMongoDB() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
@@ -22,7 +21,6 @@ async function connectToMongoDB() {
 
 connectToMongoDB();
 
-// Schema pentru rezervări
 const reservationSchema = new mongoose.Schema({
   date: { type: String, required: true },
   name: { type: String, default: 'Fără nume' },
@@ -35,7 +33,6 @@ const reservationSchema = new mongoose.Schema({
 
 const Reservation = mongoose.model('Reservation', reservationSchema);
 
-// Verifică disponibilitatea pe un interval
 app.get('/api/check/range', async (req, res) => {
   try {
     const { start, end } = req.query;
@@ -63,7 +60,6 @@ app.get('/api/check/range', async (req, res) => {
   }
 });
 
-// Verifică o dată specifică
 app.get('/api/check/:date', async (req, res) => {
   try {
     const { date } = req.params;
@@ -79,7 +75,6 @@ app.get('/api/check/:date', async (req, res) => {
   }
 });
 
-// Salvează rezervarea
 app.post('/api/reserve', async (req, res) => {
   try {
     const { date, name, email, phone, eventType, details } = req.body;
