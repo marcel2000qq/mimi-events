@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     notification.className = `notification ${type}`;
     notification.textContent = message;
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
+    setTimeout(() => notification.remove(), 10000);
   }
 
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -38,11 +38,12 @@ document.addEventListener('DOMContentLoaded', function () {
       handleDateSelection(info.event.startStr);
     },
     datesSet: async function (info) {
-      const start = info.startStr;
-      const end = info.endStr;
-      console.log('Fetching range:', start, end);
+      const start = info.startStr.split('T')[0];
+      const end = info.endStr.split('T')[0];
+
       try {
         const response = await fetch(`${BASE_URL}/check/range?start=${start}&end=${end}`);
+        console.log('Received response from server:', response);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -58,50 +59,42 @@ document.addEventListener('DOMContentLoaded', function () {
         days.forEach(day => {
           const date = day.getAttribute('data-date');
           const item = data.find(d => d.date === date);
+
+          // Remove all availability classes before adding new one
+          day.classList.remove('fc-day-full', 'fc-day-partial', 'fc-day-free', 'fc-day-disabled');
+
           const countSpan = day.querySelector('.reservation-count');
           if (countSpan) countSpan.remove();
 
           if (item) {
+            const availableSlots = Math.max(0, 4 - item.count);
+
             const countSpan = document.createElement('span');
             countSpan.className = 'reservation-count';
-            countSpan.textContent = `(${item.count})`;
+            countSpan.textContent = availableSlots === 0
+              ? '(Complet)'
+              : `(${availableSlots} locuri)`;
+
             day.querySelector('.fc-daygrid-day-number').appendChild(countSpan);
 
-            day.classList.remove('fc-day-full', 'fc-day-partial', 'fc-day-free');
-            if (item.count >= 4) {
-              day.classList.add('fc-day-full');
-              calendar.addEvent({
-                title: 'Complet',
-                start: item.date,
-                allDay: true,
-                backgroundColor: '#4A7043',
-                borderColor: '#4A7043',
-                display: 'background'
-              });
-            } else if (item.count > 0) {
+            if (availableSlots === 0) {
+              day.classList.add('fc-day-full', 'fc-day-disabled');
+            } else if (availableSlots < 4) {
               day.classList.add('fc-day-partial');
-              calendar.addEvent({
-                title: `${item.count} rezervări`,
-                start: item.date,
-                allDay: true,
-                backgroundColor: '#F5F5DC',
-                borderColor: '#F5F5DC',
-                display: 'background'
-              });
             } else {
               day.classList.add('fc-day-free');
-              calendar.addEvent({
-                title: 'Liber',
-                start: item.date,
-                allDay: true,
-                backgroundColor: '#90ee90',
-                borderColor: '#90ee90',
-                display: 'background'
-              });
             }
+          } else {
+            // If no item, treat as free
+            day.classList.add('fc-day-free');
+            const countSpan = document.createElement('span');
+            countSpan.className = 'reservation-count';
+            countSpan.textContent = '(4 locuri)';
+            day.querySelector('.fc-daygrid-day-number').appendChild(countSpan);
           }
         });
         calendar.render();
+        // calendar.trigger('datesSet', calendar.view);
       } catch (error) {
         console.error('Error fetching calendar data:', error.message);
         if (error.message.includes('Failed to fetch')) {
