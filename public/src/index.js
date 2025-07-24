@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const BASE_URL = 'http://localhost:3000/api'; // Backend rulează pe portul 3000
 
   function showNotification(message, type) {
@@ -27,17 +27,17 @@ document.addEventListener('DOMContentLoaded', function() {
     contentHeight: 400,
     dayMaxEvents: true,
     selectable: true,
-    selectAllow: function(selectInfo) {
+    selectAllow: function (selectInfo) {
       return selectInfo.start >= new Date();
     },
     events: [],
-    dateClick: function(info) {
+    dateClick: function (info) {
       handleDateSelection(info.dateStr);
     },
-    eventClick: function(info) {
+    eventClick: function (info) {
       handleDateSelection(info.event.startStr);
     },
-    datesSet: async function(info) {
+    datesSet: async function (info) {
       const start = info.startStr;
       const end = info.endStr;
       console.log('Fetching range:', start, end);
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bookingDateInput = document.getElementById('booking-date');
   const calendarContainer = document.getElementById('calendar-container');
 
-  bookingDateInput.addEventListener('click', function(e) {
+  bookingDateInput.addEventListener('click', function (e) {
     e.preventDefault();
     e.stopPropagation();
     calendarContainer.style.display = 'block';
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar.render();
   });
 
-  bookingDateInput.addEventListener('touchstart', function(e) {
+  bookingDateInput.addEventListener('touchstart', function (e) {
     e.preventDefault();
     e.stopPropagation();
     calendarContainer.style.display = 'block';
@@ -180,20 +180,20 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar.render();
   });
 
-  document.addEventListener('click', function(e) {
+  document.addEventListener('click', function (e) {
     if (!bookingDateInput.contains(e.target) && !calendarContainer.contains(e.target)) {
       calendarContainer.style.display = 'none';
     }
   });
 
-  document.addEventListener('touchstart', function(e) {
+  document.addEventListener('touchstart', function (e) {
     if (!bookingDateInput.contains(e.target) && !calendarContainer.contains(e.target)) {
       calendarContainer.style.display = 'none';
     }
   });
 
   const form = document.querySelector('.booking-form');
-  form.addEventListener('submit', async function(e) {
+  form.addEventListener('submit', async function (e) {
     e.preventDefault();
     const phone = form.querySelector('#phone').value.trim();
     const displayDate = form.querySelector('#booking-date').value || 'Nu a fost selectată';
@@ -208,10 +208,10 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    if (!/\+[0-9]{2}[0-9]{9}/.test(phone)) {
-      showNotification('Numărul de telefon trebuie să fie în formatul +40712 345 678.', 'error');
-      return;
-    }
+    // if (!/\+[0-9]{2}[0-9]{9}/.test(phone)) {
+    //   showNotification('Numărul de telefon trebuie să fie în formatul +40712 345 678.', 'error');
+    //   return;
+    // }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showNotification('Te rugăm să introduci un e-mail valid sau să lași câmpul gol.', 'error');
