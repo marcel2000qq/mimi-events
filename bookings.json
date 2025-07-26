@@ -1,0 +1,12 @@
+[
+  {"id":1,"name":"Test","phone":"+40712345678","email":"test@example.com","event_type":"nunta","date":"2025-07-28","details":"Test rezervare","confirmed":true},
+  {"id":1753292251175,"name":"","email":"","phone":"+40792847477","event_type":"","date":"2025-07-26","details":"","confirmed":true},
+  {"id":1753292562923,"name":"","email":"","phone":"+40792847477","event_type":"","date":"2025-07-25","details":"","confirmed":true},
+  {"id":1753292569884,"name":"","email":"","phone":"+40792847477","event_type":"","date":"2025-07-25","details":"","confirmed":true},
+  {"id":1753292579266,"name":"","email":"","phone":"+40792847477","event_type":"","date":"2025-07-25","details":"","confirmed":true},
+  {"id":1753292609534,"name":"","email":"","phone":"+40792847477","event_type":"","date":"2025-07-25","details":"","confirmed":true},
+  {"id":1753295763198,"name":"Cristofor Cazac","email":"cristoforcazac98@gmail.com","phone":"+37367436641","event_type":"","date":"2025-07-26","details":"","confirmed":true},
+  {"id":1753301168190,"name":"Cristofor Cazac","email":"cristoforcazac98@gmail.com","phone":"+37367436641","event_type":"","date":"2025-07-26","details":"","confirmed":true},
+  {"id":1753345929858,"name":"Cristofor Cazac","email":"cristoforcazac98@gmail.com","phone":"+37367436641","event_type":"","date":"2025-07-27","details":"brruuuu\n","confirmed":true},
+  {"id":1753348210133,"name":"Cristofor Cazac","email":"cristoforcazac98@gmail.com","phone":"+37367436641","event_type":"","date":"2025-07-29","details":"","confirmed":true}
+]
